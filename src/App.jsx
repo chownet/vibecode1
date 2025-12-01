@@ -119,6 +119,7 @@ function App() {
       ...auctionData,
       creator: user?.username || 'Anonymous',
       creatorFid: user?.fid || null,
+      creatorAddress: walletAddress || null, // Store creator's wallet address
       createdAt: Date.now(),
       bids: [],
       status: 'active'
@@ -127,7 +128,7 @@ function App() {
     setView('list');
   };
 
-  const placeBid = (auctionId, bidAmount) => {
+  const placeBid = async (auctionId, bidAmount, transactionHash) => {
     setAuctions(prevAuctions => {
       return prevAuctions.map(auction => {
         if (auction.id === auctionId && auction.status === 'active') {
@@ -135,7 +136,9 @@ function App() {
             id: Date.now().toString(),
             bidder: user?.username || 'Anonymous',
             bidderFid: user?.fid || null,
+            bidderAddress: walletAddress,
             amount: bidAmount,
+            transactionHash: transactionHash,
             timestamp: Date.now()
           };
           

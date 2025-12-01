@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function CreateAuction({ onCreate, user, isConnected }) {
+function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,8 +13,8 @@ function CreateAuction({ onCreate, user, isConnected }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!isConnected) {
-      alert('Please connect your wallet first');
+    if (!isConnected || !walletAddress) {
+      alert('Please connect your wallet first to create an auction');
       return;
     }
 
