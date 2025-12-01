@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AuctionCard from './AuctionCard';
 
-function AuctionList({ auctions, onBid, user, isConnected }) {
+function AuctionList({ auctions, onBid, user, isConnected, walletAddress, ethProvider }) {
   const [filter, setFilter] = useState('all'); // 'all', 'active', 'ended'
 
   const filteredAuctions = auctions.filter(auction => {
@@ -46,6 +46,8 @@ function AuctionList({ auctions, onBid, user, isConnected }) {
               onBid={onBid}
               user={user}
               isConnected={isConnected}
+              walletAddress={walletAddress}
+              ethProvider={ethProvider}
             />
           ))}
         </div>

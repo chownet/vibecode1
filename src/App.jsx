@@ -9,6 +9,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('list'); // 'list' or 'create'
   const [isConnected, setIsConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [ethProvider, setEthProvider] = useState(null);
 
   useEffect(() => {
     // Load auctions from localStorage
@@ -26,12 +28,28 @@ function App() {
           // Initialize SDK first
           await sdk.actions.ready();
           
-          // Get context
+          // Get context for Farcaster user info
           const context = await sdk.context.getContext();
           
           if (context?.user) {
             setUser(context.user);
-            setIsConnected(true);
+          }
+
+          // Get Ethereum provider for wallet functionality
+          try {
+            const provider = await sdk.wallet.getEthereumProvider();
+            if (provider) {
+              setEthProvider(provider);
+              
+              // Get connected accounts
+              const accounts = await provider.request({ method: 'eth_accounts' });
+              if (accounts && accounts.length > 0) {
+                setWalletAddress(accounts[0]);
+                setIsConnected(true);
+              }
+            }
+          } catch (walletError) {
+            console.warn('Wallet provider not available:', walletError);
           }
         } else {
           // Not in mini app - allow preview mode
@@ -146,19 +164,43 @@ function App() {
     try {
       const inMiniApp = await sdk.isInMiniApp?.();
       if (!inMiniApp) {
-        alert('Please open this app in the Base or Farcaster app to connect');
+        alert('Please open this app in the Base or Farcaster app to connect your wallet');
         return;
       }
 
-      // Sign in using Farcaster SDK
-      const signInResult = await sdk.actions.signIn();
-      if (signInResult?.user) {
-        setUser(signInResult.user);
+      // Get Ethereum provider
+      const provider = await sdk.wallet.getEthereumProvider();
+      if (!provider) {
+        alert('Wallet provider not available. Please ensure you are in the Base or Farcaster app.');
+        return;
+      }
+
+      // Request account access
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      
+      if (accounts && accounts.length > 0) {
+        setWalletAddress(accounts[0]);
         setIsConnected(true);
+        
+        // Also get Farcaster user context if available
+        try {
+          const context = await sdk.context.getContext();
+          if (context?.user) {
+            setUser(context.user);
+          }
+        } catch (contextError) {
+          console.warn('Could not get user context:', contextError);
+        }
+      } else {
+        alert('No accounts found. Please connect your wallet in the Base or Farcaster app.');
       }
     } catch (error) {
-      console.error('Failed to sign in:', error);
-      alert('Failed to sign in. Please try again.');
+      console.error('Failed to connect wallet:', error);
+      if (error.code === 4001) {
+        alert('Wallet connection was rejected. Please try again.');
+      } else {
+        alert('Failed to connect wallet. Please try again.');
+      }
     }
   };
 
@@ -172,9 +214,14 @@ function App() {
               Connect Wallet
             </button>
           )}
-          {isConnected && user && (
+          {isConnected && (
             <div className="user-info">
-              <span>@{user.username}</span>
+              {user?.username && <span>@{user.username}</span>}
+              {walletAddress && (
+                <span className="wallet-address">
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -202,6 +249,8 @@ function App() {
             onBid={placeBid}
             user={user}
             isConnected={isConnected}
+            walletAddress={walletAddress}
+            ethProvider={ethProvider}
           />
         )}
         {view === 'create' && (
@@ -209,6 +258,7 @@ function App() {
             onCreate={createAuction}
             user={user}
             isConnected={isConnected}
+            walletAddress={walletAddress}
           />
         )}
       </main>

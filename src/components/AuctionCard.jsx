@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import CountdownTimer from './CountdownTimer';
 
-function AuctionCard({ auction, onBid, user, isConnected }) {
+function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProvider }) {
   const [bidAmount, setBidAmount] = useState('');
   const [showBidForm, setShowBidForm] = useState(false);
   
@@ -11,13 +11,44 @@ function AuctionCard({ auction, onBid, user, isConnected }) {
   const highestBid = auction.bids.length > 0 ? auction.bids[0].amount : 0;
   const minBid = highestBid + 0.01;
 
-  const handleBid = (e) => {
+  const handleBid = async (e) => {
     e.preventDefault();
     const amount = parseFloat(bidAmount);
-    if (amount >= minBid && !isEnded) {
+    
+    if (!isConnected || !walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    
+    if (amount < minBid) {
+      alert(`Minimum bid is ${minBid.toFixed(2)} ETH`);
+      return;
+    }
+    
+    if (isEnded) {
+      alert('This auction has ended');
+      return;
+    }
+
+    // For demo purposes, we'll just record the bid
+    // In production, you'd send an actual transaction here
+    try {
+      // Verify wallet is still connected
+      if (ethProvider) {
+        const accounts = await ethProvider.request({ method: 'eth_accounts' });
+        if (!accounts || accounts.length === 0) {
+          alert('Wallet disconnected. Please reconnect.');
+          return;
+        }
+      }
+      
+      // Record the bid
       onBid(auction.id, amount);
       setBidAmount('');
       setShowBidForm(false);
+    } catch (error) {
+      console.error('Bid error:', error);
+      alert('Failed to place bid. Please try again.');
     }
   };
 
