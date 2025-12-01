@@ -8,3 +8,4 @@ scripts/
 .env.local
 *.log
 node_modules/.cache/
+.hardhat/
