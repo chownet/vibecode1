@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { ethers } from 'ethers';
 import AuctionList from './components/AuctionList';
 import CreateAuction from './components/CreateAuction';
+import * as contractUtils from './utils/contract';
 import './App.css';
 
 function App() {
@@ -11,6 +13,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState(null);
   const [ethProvider, setEthProvider] = useState(null);
+  const [pendingRefunds, setPendingRefunds] = useState('0');
 
   useEffect(() => {
     // Load auctions from localStorage
@@ -46,6 +49,15 @@ function App() {
               if (accounts && accounts.length > 0) {
                 setWalletAddress(accounts[0]);
                 setIsConnected(true);
+                
+                // Check for pending refunds
+                try {
+                  const ethersProvider = new ethers.BrowserProvider(provider);
+                  const refunds = await contractUtils.getPendingRefunds(ethersProvider, accounts[0]);
+                  setPendingRefunds(refunds);
+                } catch (error) {
+                  console.warn('Could not check pending refunds:', error);
+                }
               }
             }
           } catch (walletError) {
@@ -74,8 +86,10 @@ function App() {
 
   // Auto-close auctions based on time limit or auto-accept price
   useEffect(() => {
-    const checkAndCloseAuctions = () => {
+    const checkAndCloseAuctions = async () => {
       const now = Date.now();
+      const auctionsToClose = [];
+      
       setAuctions(prevAuctions => {
         return prevAuctions.map(auction => {
           if (auction.status !== 'active') return auction;
@@ -90,6 +104,11 @@ function App() {
           const priceReached = auction.autoAcceptPrice && highestBid >= auction.autoAcceptPrice;
           
           if (timeLimitReached || priceReached) {
+            // If auction has on-chain ID, close it on-chain
+            if (auction.onChainId && ethProvider) {
+              auctionsToClose.push(auction.onChainId);
+            }
+            
             return {
               ...auction,
               status: 'closed',
@@ -102,33 +121,73 @@ function App() {
           return auction;
         });
       });
+
+      // Close auctions on-chain
+      if (auctionsToClose.length > 0 && ethProvider) {
+        const provider = new ethers.BrowserProvider(ethProvider);
+        for (const onChainId of auctionsToClose) {
+          try {
+            await contractUtils.closeAuctionOnChain(provider, onChainId);
+          } catch (error) {
+            console.warn('Failed to close auction on-chain:', error);
+          }
+        }
+      }
     };
 
     // Check immediately
     checkAndCloseAuctions();
 
-    // Check every second
-    const interval = setInterval(checkAndCloseAuctions, 1000);
+    // Check every 5 seconds (less frequent to avoid too many contract calls)
+    const interval = setInterval(checkAndCloseAuctions, 5000);
 
     return () => clearInterval(interval);
-  }, [auctions.length]);
+  }, [auctions.length, ethProvider]);
 
-  const createAuction = (auctionData) => {
-    const newAuction = {
-      id: Date.now().toString(),
-      ...auctionData,
-      creator: user?.username || 'Anonymous',
-      creatorFid: user?.fid || null,
-      creatorAddress: walletAddress || null, // Store creator's wallet address
-      createdAt: Date.now(),
-      bids: [],
-      status: 'active'
-    };
-    setAuctions([newAuction, ...auctions]);
-    setView('list');
+  const createAuction = async (auctionData) => {
+    if (!ethProvider || !walletAddress) {
+      alert('Please connect your wallet to create an auction');
+      return;
+    }
+
+    try {
+      // Calculate end time (current time + duration in seconds)
+      const endTime = Math.floor(Date.now() / 1000) + (auctionData.durationMinutes * 60);
+      
+      // Convert autoAcceptPrice from ETH to wei (0 if not set)
+      const autoAcceptPrice = auctionData.autoAcceptPrice || 0;
+
+      // Create auction on-chain
+      const onChainAuctionId = await contractUtils.createAuctionOnChain(
+        new ethers.BrowserProvider(ethProvider),
+        endTime,
+        autoAcceptPrice
+      );
+
+      // Create local auction record
+      const newAuction = {
+        id: Date.now().toString(),
+        onChainId: onChainAuctionId, // Link to on-chain auction
+        ...auctionData,
+        creator: user?.username || 'Anonymous',
+        creatorFid: user?.fid || null,
+        creatorAddress: walletAddress,
+        createdAt: Date.now(),
+        endTime: endTime * 1000, // Convert to milliseconds
+        bids: [],
+        status: 'active'
+      };
+      
+      setAuctions([newAuction, ...auctions]);
+      setView('list');
+    } catch (error) {
+      console.error('Error creating auction:', error);
+      alert('Failed to create auction on-chain: ' + (error.message || 'Unknown error'));
+    }
   };
 
-  const placeBid = async (auctionId, bidAmount, transactionHash) => {
+  const placeBid = async (auctionId, bidAmount, transactionHash, onChainAuctionId) => {
+    // Update local state
     setAuctions(prevAuctions => {
       return prevAuctions.map(auction => {
         if (auction.id === auctionId && auction.status === 'active') {
@@ -161,6 +220,57 @@ function App() {
         return auction;
       });
     });
+
+    // Sync with on-chain state
+    if (onChainAuctionId && ethProvider) {
+      try {
+        const provider = new ethers.BrowserProvider(ethProvider);
+        const auctionData = await contractUtils.getAuctionFromContract(provider, onChainAuctionId);
+        if (auctionData && auctionData.isClosed) {
+          // Update local state if auction closed on-chain
+          setAuctions(prevAuctions => {
+            return prevAuctions.map(auction => {
+              if (auction.onChainId === onChainAuctionId) {
+                return {
+                  ...auction,
+                  status: 'closed',
+                  closedAt: auctionData.endTime * 1000,
+                  closedReason: 'time_limit'
+                };
+              }
+              return auction;
+            });
+          });
+        }
+      } catch (error) {
+        console.warn('Error syncing with contract:', error);
+      }
+    }
+  };
+
+  const withdrawRefunds = async () => {
+    if (!ethProvider || !walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    if (parseFloat(pendingRefunds) === 0) {
+      alert('No pending refunds available');
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(ethProvider);
+      const txHash = await contractUtils.withdrawRefund(provider);
+      alert(`Refund withdrawal submitted! Transaction: ${txHash}`);
+      
+      // Update pending refunds
+      const refunds = await contractUtils.getPendingRefunds(provider, walletAddress);
+      setPendingRefunds(refunds);
+    } catch (error) {
+      console.error('Error withdrawing refunds:', error);
+      alert('Failed to withdraw refunds: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const connectWallet = async () => {
@@ -184,6 +294,16 @@ function App() {
       if (accounts && accounts.length > 0) {
         setWalletAddress(accounts[0]);
         setIsConnected(true);
+        setEthProvider(provider);
+        
+        // Check for pending refunds
+        try {
+          const ethersProvider = new ethers.BrowserProvider(provider);
+          const refunds = await contractUtils.getPendingRefunds(ethersProvider, accounts[0]);
+          setPendingRefunds(refunds);
+        } catch (error) {
+          console.warn('Could not check pending refunds:', error);
+        }
         
         // Also get Farcaster user context if available
         try {
@@ -224,6 +344,15 @@ function App() {
                 <span className="wallet-address">
                   {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                 </span>
+              )}
+              {parseFloat(pendingRefunds) > 0 && (
+                <button 
+                  onClick={withdrawRefunds}
+                  className="withdraw-refund-btn"
+                  title={`Withdraw ${parseFloat(pendingRefunds).toFixed(4)} ETH in refunds`}
+                >
+                  💰 {parseFloat(pendingRefunds).toFixed(4)} ETH refunds
+                </button>
               )}
             </div>
           )}

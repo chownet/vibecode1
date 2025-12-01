@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
 import CountdownTimer from './CountdownTimer';
+import * as contractUtils from '../utils/contract';
 
 function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProvider }) {
   const [bidAmount, setBidAmount] = useState('');
@@ -37,6 +39,12 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       return;
     }
 
+    // Check if auction has on-chain ID
+    if (!auction.onChainId) {
+      alert('Auction not found on-chain. Please refresh and try again.');
+      return;
+    }
+
     setIsProcessing(true);
     setTxStatus('Preparing transaction...');
 
@@ -50,71 +58,25 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         return;
       }
 
-      // Convert ETH to wei (1 ETH = 10^18 wei)
-      const amountInWei = BigInt(Math.floor(amount * 1e18));
-      const weiHex = '0x' + amountInWei.toString(16);
-
       setTxStatus('Requesting transaction approval...');
-      
-      // Estimate gas for the transaction
-      let gasLimit = '0x5208'; // Default 21000 for simple transfer
-      try {
-        const estimatedGas = await ethProvider.request({
-          method: 'eth_estimateGas',
-          params: [{
-            from: walletAddress,
-            to: auctionCreatorAddress,
-            value: weiHex,
-          }]
-        });
-        gasLimit = estimatedGas;
-      } catch (error) {
-        console.warn('Gas estimation failed, using default:', error);
-      }
 
-      // Send transaction - sending ETH to the auction creator's address
-      // In production, this would go to a smart contract escrow that holds funds
-      // For now, we send directly to creator (in production, use auction contract)
-      if (!auction.creatorAddress) {
-        throw new Error('Auction creator address not found');
-      }
-      
-      const auctionCreatorAddress = auction.creatorAddress;
-      
-      const txHash = await ethProvider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: walletAddress,
-          to: auctionCreatorAddress, // In production: use auction contract address
-          value: weiHex,
-          gas: gasLimit,
-        }]
-      });
+      // Use smart contract to place bid
+      const provider = new ethers.BrowserProvider(ethProvider);
+      const txHash = await contractUtils.placeBidOnChain(
+        provider,
+        auction.onChainId,
+        amount
+      );
 
       setTxStatus('Transaction submitted! Waiting for confirmation...');
 
       // Wait for transaction confirmation
-      let receipt = null;
-      let attempts = 0;
-      const maxAttempts = 30; // 30 seconds timeout
+      const receipt = await provider.waitForTransaction(txHash, 1, 30000); // 30 second timeout
 
-      while (!receipt && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        try {
-          receipt = await ethProvider.request({
-            method: 'eth_getTransactionReceipt',
-            params: [txHash]
-          });
-        } catch (error) {
-          console.warn('Waiting for transaction...', attempts);
-        }
-        attempts++;
-      }
-
-      if (receipt && receipt.status === '0x1') {
+      if (receipt && receipt.status === 1) {
         setTxStatus('Transaction confirmed!');
         // Record the bid with transaction hash
-        onBid(auction.id, amount, txHash);
+        onBid(auction.id, amount, txHash, auction.onChainId);
         setBidAmount('');
         setShowBidForm(false);
         
@@ -124,16 +86,19 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
           setIsProcessing(false);
         }, 3000);
       } else {
-        throw new Error('Transaction failed or timed out');
+        throw new Error('Transaction failed');
       }
     } catch (error) {
       console.error('Bid transaction error:', error);
-      if (error.code === 4001) {
+      if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
         setTxStatus('Transaction rejected by user');
         alert('Transaction was rejected. Please try again.');
-      } else if (error.code === -32603) {
-        setTxStatus('Transaction failed');
-        alert('Transaction failed. Please check your balance and try again.');
+      } else if (error.message && error.message.includes('insufficient funds')) {
+        setTxStatus('Insufficient funds');
+        alert('You do not have enough ETH to place this bid.');
+      } else if (error.message && error.message.includes('Bid must be higher')) {
+        setTxStatus('Bid too low');
+        alert('Your bid must be higher than the current highest bid.');
       } else {
         setTxStatus('Error: ' + (error.message || 'Unknown error'));
         alert('Failed to place bid: ' + (error.message || 'Unknown error'));
