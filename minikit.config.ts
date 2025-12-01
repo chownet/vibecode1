@@ -1,8 +1,7 @@
 // Base Mini App Configuration
 // Update ROOT_URL with your deployed domain
 const ROOT_URL =
-  process.env.VITE_ROOT_URL ||
-  'https://vibecode1-641fgi4kc-sarahs-projects-79aa0250.vercel.app';
+  process.env.VITE_ROOT_URL || 'https://vibecode1-xi.vercel.app';
 
 export const minikitConfig = {
   accountAssociation: {
