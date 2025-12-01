@@ -5,9 +5,8 @@
   "redirects": [
     {
       "source": "/.well-known/farcaster.json",
-      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019ad905-5cf3-e249-a0eb-f99a26b57f4b",
-      "permanent": false,
-      "statusCode": 307
+      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019ad913-0033-03de-34d9-f1b2d0430d32",
+      "permanent": false
     }
   ]
 }
