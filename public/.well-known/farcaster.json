@@ -8,6 +8,7 @@
     "splashImageUrl": "https://vibecode1-xi.vercel.app/splash.png",
     "splashBackgroundColor": "#CBC3E3",
     "homeUrl": "https://vibecode1-xi.vercel.app",
+    "canonicalDomain": "vibecode1-xi.vercel.app",
     "webhookUrl": "https://vibecode1-xi.vercel.app/api/webhook",
     "primaryCategory": "utility",
     "tags": [

@@ -19,35 +19,30 @@ function App() {
 
     const initFarcaster = async () => {
       try {
+        // Always try to initialize, even if not in mini app (for preview)
         const inMiniApp = await sdk.isInMiniApp?.();
-        if (!inMiniApp) {
-          // Provide a lightweight local dev experience
-          setUser({ username: 'local-user', fid: '0' });
-          setIsConnected(false);
-          return;
-        }
-
-        // Initialize SDK and get context
-        await sdk.actions.ready();
-        const context = await sdk.context.getContext();
         
-        if (context?.user) {
-          setUser(context.user);
-          setIsConnected(true);
-        } else {
-          // If no user context, try to sign in
-          try {
-            const signInResult = await sdk.actions.signIn();
-            if (signInResult?.user) {
-              setUser(signInResult.user);
-              setIsConnected(true);
-            }
-          } catch (signInError) {
-            console.warn('Sign in not available', signInError);
+        if (inMiniApp) {
+          // Initialize SDK first
+          await sdk.actions.ready();
+          
+          // Get context
+          const context = await sdk.context.getContext();
+          
+          if (context?.user) {
+            setUser(context.user);
+            setIsConnected(true);
           }
+        } else {
+          // Not in mini app - allow preview mode
+          setUser({ username: 'preview-user', fid: '0' });
+          setIsConnected(false);
         }
       } catch (error) {
-        console.warn('Farcaster context unavailable', error);
+        console.warn('Farcaster initialization error:', error);
+        // Allow app to work in preview mode even if SDK fails
+        setUser({ username: 'preview-user', fid: '0' });
+        setIsConnected(false);
       }
     };
 
