@@ -27,12 +27,17 @@ function App() {
       setAuctions(JSON.parse(savedAuctions));
     }
 
-    // Load chats from localStorage
-    const savedChats = JSON.parse(localStorage.getItem('chats') || '{}');
-    const chatArray = Object.values(savedChats).filter(chat => 
-      chat.sellerAddress === walletAddress || chat.buyerAddress === walletAddress
-    );
-    setChats(chatArray);
+    // Load chats from localStorage (will be updated when wallet connects)
+    const loadChats = () => {
+      if (!walletAddress) return;
+      const savedChats = JSON.parse(localStorage.getItem('chats') || '{}');
+      const chatArray = Object.values(savedChats).filter(chat => 
+        chat.sellerAddress === walletAddress || chat.buyerAddress === walletAddress
+      );
+      setChats(chatArray);
+    };
+    
+    loadChats();
 
     const initFarcaster = async () => {
       try {
@@ -363,6 +368,13 @@ function App() {
         } catch (error) {
           console.warn('Could not check pending refunds:', error);
         }
+        
+        // Load chats for this wallet
+        const savedChats = JSON.parse(localStorage.getItem('chats') || '{}');
+        const chatArray = Object.values(savedChats).filter(chat => 
+          chat.sellerAddress === accounts[0] || chat.buyerAddress === accounts[0]
+        );
+        setChats(chatArray);
         
         // Also get Farcaster user context if available
         try {
