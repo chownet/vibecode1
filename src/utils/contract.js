@@ -107,14 +107,6 @@ export function formatUSDC(amount) {
  */
 export async function approveUSDC(provider, amount) {
   try {
-    // Check network first
-    const network = await provider.getNetwork();
-    const chainId = Number(network.chainId);
-    
-    if (chainId !== BASE_SEPOLIA_CHAIN_ID && chainId !== BASE_MAINNET_CHAIN_ID) {
-      throw new Error(`Unsupported network. Please switch to Base Sepolia (Chain ID: ${BASE_SEPOLIA_CHAIN_ID}) or Base Mainnet (Chain ID: ${BASE_MAINNET_CHAIN_ID})`);
-    }
-    
     const usdcToken = await getUSDCToken(provider);
     const signer = await provider.getSigner();
     const usdcWithSigner = usdcToken.connect(signer);

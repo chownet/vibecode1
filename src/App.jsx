@@ -65,16 +65,18 @@ function App() {
               // Get connected accounts
               const accounts = await provider.request({ method: 'eth_accounts' });
               if (accounts && accounts.length > 0) {
-                // Check network and prompt to switch if needed
-                try {
-                  await networkUtils.ensureBaseSepolia(provider);
-                } catch (error) {
-                  console.warn('Network check:', error.message);
-                  alert(error.message);
-                }
-                
                 setWalletAddress(accounts[0]);
                 setIsConnected(true);
+                
+                // Check network (non-blocking, just warn)
+                try {
+                  const isOnTestnet = await networkUtils.isOnBaseSepolia(provider);
+                  if (!isOnTestnet) {
+                    console.warn('Not on Base Sepolia testnet. Some features may not work correctly.');
+                  }
+                } catch (error) {
+                  console.warn('Could not check network:', error);
+                }
                 
                 // Check for pending refunds
                 try {
@@ -365,18 +367,27 @@ function App() {
       const accounts = await provider.request({ method: 'eth_requestAccounts' });
       
       if (accounts && accounts.length > 0) {
-        // Check network and prompt to switch if needed
-        try {
-          await networkUtils.ensureBaseSepolia(provider);
-        } catch (error) {
-          console.warn('Network check:', error.message);
-          alert(error.message);
-          return;
-        }
-        
         setWalletAddress(accounts[0]);
         setIsConnected(true);
         setEthProvider(provider);
+        
+        // Check network (non-blocking, just warn)
+        try {
+          const isOnTestnet = await networkUtils.isOnBaseSepolia(provider);
+          if (!isOnTestnet) {
+            console.warn('Not on Base Sepolia testnet. Some features may not work correctly.');
+            // Show a non-blocking warning
+            setTimeout(() => {
+              const network = await provider.getNetwork();
+              const chainId = Number(network.chainId);
+              if (chainId !== networkUtils.BASE_SEPOLIA_CHAIN_ID) {
+                console.log(`Current network: Chain ID ${chainId}. Recommended: Base Sepolia (${networkUtils.BASE_SEPOLIA_CHAIN_ID})`);
+              }
+            }, 1000);
+          }
+        } catch (error) {
+          console.warn('Could not check network:', error);
+        }
         
         // Check for pending refunds
         try {
