@@ -5,11 +5,9 @@ const ROOT_URL =
 
 export const minikitConfig = {
   accountAssociation: {
-    // This will be generated when you associate your account
-    // See: https://docs.base.org/mini-apps/quickstart/create-new-miniapp#step-4
-    "header": "",
-    "payload": "",
-    "signature": ""
+    "header": "eyJmaWQiOjEwNDk3NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhGYWEzMzczYUNCNkZBYzA4Q0VkNkQ0OTU0MzdkMjlGNjY3NTAyOTk5In0",
+    "payload": "eyJkb21haW4iOiJ2aWJlY29kZTEteGkudmVyY2VsLmFwcCJ9",
+    "signature": "otVc1Tfm2yWIvPLJ/LWiE4YhIj0391jRvznblz6IubpfjFk5R2+5mFvVuUGZ/qyZSWfCek9tBOMcCU/E4JlS2Bw="
   },
   miniapp: {
     version: "1",
