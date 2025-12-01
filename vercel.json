@@ -2,25 +2,18 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/.well-known/farcaster.json",
+      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019ad905-5cf3-e249-a0eb-f99a26b57f4b",
+      "permanent": false,
+      "statusCode": 307
+    }
+  ],
   "rewrites": [
     {
       "source": "/.well-known/(.*)",
       "destination": "/.well-known/$1"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/.well-known/farcaster.json",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
     }
   ]
 }
