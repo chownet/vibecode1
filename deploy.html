@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy AuctionEscrow Contract</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .step { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #5568d3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 6px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Deploy AuctionEscrow to Base Sepolia</h1>
+        <p>This uses MetaMask - no private keys needed!</p>
+
+        <div class="step">
+            <h3>Step 1: Get Testnet ETH</h3>
+            <p>Make sure you have testnet ETH on Base Sepolia:</p>
+            <a href="https://www.coinbase.com/faucets/base-ethereum-goerli-faucet" target="_blank">
+                <button>Get Testnet ETH</button>
+            </a>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Connect MetaMask</h3>
+            <p>Make sure MetaMask is on <strong>Base Sepolia</strong> network (Chain ID: 84532)</p>
+            <button id="connectBtn" onclick="connectWallet()">Connect MetaMask</button>
+            <div id="walletInfo" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Load Contract</h3>
+            <p>Paste your compiled contract bytecode and ABI here, or use Remix to compile first.</p>
+            <p><strong>Easier option:</strong> Use <a href="https://remix.ethereum.org" target="_blank">Remix IDE</a> to compile and deploy - it's simpler!</p>
+        </div>
+
+        <div class="step">
+            <h3>Or: Use Remix (Recommended)</h3>
+            <p>The easiest way is to use Remix IDE:</p>
+            <ol>
+                <li>Go to <a href="https://remix.ethereum.org" target="_blank">remix.ethereum.org</a></li>
+                <li>Create file <code>AuctionEscrow.sol</code></li>
+                <li>Copy code from <code>contracts/AuctionEscrow.sol</code></li>
+                <li>Compile with Solidity 0.8.20</li>
+                <li>Deploy with "Injected Provider - MetaMask"</li>
+                <li>Copy the contract address</li>
+                <li>Update <code>src/utils/contract.js</code></li>
+            </ol>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let provider, signer, contractAddress;
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showStatus('Please install MetaMask!', 'error');
+                return;
+            }
+
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+                const network = await provider.getNetwork();
+
+                if (network.chainId !== 84532) {
+                    showStatus('Please switch to Base Sepolia network (Chain ID: 84532)', 'error');
+                    return;
+                }
+
+                document.getElementById('walletInfo').innerHTML = `
+                    <div class="status success">
+                        ✅ Connected: ${address}<br>
+                        Network: Base Sepolia (${network.chainId})
+                    </div>
+                `;
+
+                showStatus('Wallet connected! Now use Remix IDE to deploy (see instructions above).', 'success');
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Check if already connected
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        connectWallet();
+                    }
+                } catch (e) {}
+            }
+        });
+    </script>
+</body>
+</html>
+
