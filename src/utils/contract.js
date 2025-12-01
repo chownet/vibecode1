@@ -6,8 +6,41 @@ export const CONTRACT_ADDRESS = process.env.VITE_CONTRACT_ADDRESS || '0x00000000
 
 // USDC token addresses
 // Base Mainnet: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-// Base Sepolia: Use testnet USDC or deploy a test token
-export const USDC_ADDRESS = process.env.VITE_USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Base mainnet USDC
+// Base Sepolia: Test USDC token (you may need to deploy your own test token)
+// For Base Sepolia, you can deploy a simple ERC20 test token or use an existing one
+export const USDC_ADDRESS_MAINNET = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+export const USDC_ADDRESS_TESTNET = process.env.VITE_USDC_ADDRESS_TESTNET || '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Base Sepolia test USDC (update this with your deployed test token)
+
+// Network chain IDs
+export const BASE_MAINNET_CHAIN_ID = 8453;
+export const BASE_SEPOLIA_CHAIN_ID = 84532;
+
+/**
+ * Get USDC address based on current network
+ */
+export async function getUSDCAddress(provider) {
+  try {
+    const network = await provider.getNetwork();
+    const chainId = Number(network.chainId);
+    
+    if (chainId === BASE_SEPOLIA_CHAIN_ID) {
+      return USDC_ADDRESS_TESTNET;
+    } else if (chainId === BASE_MAINNET_CHAIN_ID) {
+      return USDC_ADDRESS_MAINNET;
+    } else {
+      // Default to testnet for safety
+      console.warn('Unknown network, defaulting to testnet USDC');
+      return USDC_ADDRESS_TESTNET;
+    }
+  } catch (error) {
+    console.error('Error detecting network:', error);
+    // Default to testnet for safety
+    return USDC_ADDRESS_TESTNET;
+  }
+}
+
+// Default export for backward compatibility (will be overridden by getUSDCAddress)
+export const USDC_ADDRESS = USDC_ADDRESS_TESTNET;
 
 // USDC has 6 decimals
 export const USDC_DECIMALS = 6;
@@ -44,7 +77,8 @@ export const AUCTION_ESCROW_ABI = [
  * Get USDC token contract instance
  */
 export async function getUSDCToken(provider) {
-  return new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
+  const usdcAddress = await getUSDCAddress(provider);
+  return new ethers.Contract(usdcAddress, ERC20_ABI, provider);
 }
 
 /**
@@ -73,6 +107,14 @@ export function formatUSDC(amount) {
  */
 export async function approveUSDC(provider, amount) {
   try {
+    // Check network first
+    const network = await provider.getNetwork();
+    const chainId = Number(network.chainId);
+    
+    if (chainId !== BASE_SEPOLIA_CHAIN_ID && chainId !== BASE_MAINNET_CHAIN_ID) {
+      throw new Error(`Unsupported network. Please switch to Base Sepolia (Chain ID: ${BASE_SEPOLIA_CHAIN_ID}) or Base Mainnet (Chain ID: ${BASE_MAINNET_CHAIN_ID})`);
+    }
+    
     const usdcToken = await getUSDCToken(provider);
     const signer = await provider.getSigner();
     const usdcWithSigner = usdcToken.connect(signer);

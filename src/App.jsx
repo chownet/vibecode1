@@ -6,6 +6,7 @@ import CreateAuction from './components/CreateAuction';
 import ChatList from './components/ChatList';
 import Chat from './components/Chat';
 import * as contractUtils from './utils/contract';
+import * as networkUtils from './utils/network';
 import './App.css';
 
 function App() {
@@ -64,6 +65,14 @@ function App() {
               // Get connected accounts
               const accounts = await provider.request({ method: 'eth_accounts' });
               if (accounts && accounts.length > 0) {
+                // Check network and prompt to switch if needed
+                try {
+                  await networkUtils.ensureBaseSepolia(provider);
+                } catch (error) {
+                  console.warn('Network check:', error.message);
+                  alert(error.message);
+                }
+                
                 setWalletAddress(accounts[0]);
                 setIsConnected(true);
                 
@@ -356,6 +365,15 @@ function App() {
       const accounts = await provider.request({ method: 'eth_requestAccounts' });
       
       if (accounts && accounts.length > 0) {
+        // Check network and prompt to switch if needed
+        try {
+          await networkUtils.ensureBaseSepolia(provider);
+        } catch (error) {
+          console.warn('Network check:', error.message);
+          alert(error.message);
+          return;
+        }
+        
         setWalletAddress(accounts[0]);
         setIsConnected(true);
         setEthProvider(provider);
