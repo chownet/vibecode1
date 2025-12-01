@@ -1,13 +1,13 @@
 // Base Mini App Configuration
 // Update ROOT_URL with your deployed domain
 const ROOT_URL =
-  process.env.VITE_ROOT_URL || 'https://vibecode1-xi.vercel.app';
+  process.env.VITE_ROOT_URL || 'https://auctionhauz.vercel.app';
 
 export const minikitConfig = {
   accountAssociation: {
-    "header": "eyJmaWQiOjEwNDk3NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhGYWEzMzczYUNCNkZBYzA4Q0VkNkQ0OTU0MzdkMjlGNjY3NTAyOTk5In0",
-    "payload": "eyJkb21haW4iOiJ2aWJlY29kZTEteGkudmVyY2VsLmFwcCJ9",
-    "signature": "otVc1Tfm2yWIvPLJ/LWiE4YhIj0391jRvznblz6IubpfjFk5R2+5mFvVuUGZ/qyZSWfCek9tBOMcCU/E4JlS2Bw="
+    "header": "eyJmaWQiOjEwNDk3NTMsInR5cGUiOiJhdXRoIiwia2V5IjoiMHgwNzFhNTU4OEQ3Q2Q1MGZDQzQ4MDFlRTE0RDM3RDZjQUQ1MEQxN0M5In0",
+    "payload": "eyJkb21haW4iOiJhdWN0aW9uaGF1ei52ZXJjZWwuYXBwIn0",
+    "signature": "1noB/H0lirS0igLIQqEoHBQ0u+NuS2YB04yJQe3oI4JURGeodVhGfeek8+Wcvjj82KyczgADP/ZrVJ0Zqg18oRw="
   },
   miniapp: {
     version: "1",
