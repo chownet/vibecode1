@@ -1,22 +1,29 @@
 {
-  "version": "1",
-  "name": "Farcaster Auction",
-  "subtitle": "Create and bid on auctions",
-  "description": "A decentralized auction platform where users can create auctions, set time limits or auto-accept prices, and bid on items.",
-  "iconUrl": "https://vibecode1-xi.vercel.app/icon.png",
-  "splashImageUrl": "https://vibecode1-xi.vercel.app/splash.png",
-  "splashBackgroundColor": "#667eea",
-  "homeUrl": "https://vibecode1-xi.vercel.app",
-  "webhookUrl": "https://vibecode1-xi.vercel.app/api/webhook",
-  "primaryCategory": "social",
-  "tags": ["auction", "marketplace", "trading", "nft"],
-  "heroImageUrl": "https://vibecode1-xi.vercel.app/hero.png",
-  "tagline": "Auction anything, bid anywhere",
-  "ogTitle": "Farcaster Auction - Decentralized Auctions",
-  "ogDescription": "Create and participate in auctions on Farcaster",
-  "ogImageUrl": "https://vibecode1-xi.vercel.app/og-image.png",
-  "screenshotUrls": [
-    "https://vibecode1-xi.vercel.app/screenshot-portrait.png"
-  ]
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Farcaster Auction",
+    "subtitle": "Create and bid on auctions",
+    "description": "A decentralized auction platform where users can create auctions, set time limits or auto-accept prices, and bid on items.",
+    "iconUrl": "https://vibecode1-xi.vercel.app/icon.png",
+    "splashImageUrl": "https://vibecode1-xi.vercel.app/splash.png",
+    "splashBackgroundColor": "#667eea",
+    "homeUrl": "https://vibecode1-xi.vercel.app",
+    "webhookUrl": "https://vibecode1-xi.vercel.app/api/webhook",
+    "primaryCategory": "social",
+    "tags": ["auction", "marketplace", "trading", "nft"],
+    "heroImageUrl": "https://vibecode1-xi.vercel.app/hero.png",
+    "tagline": "Auction anything, bid anywhere",
+    "ogTitle": "Farcaster Auction - Decentralized Auctions",
+    "ogDescription": "Create and participate in auctions on Farcaster",
+    "ogImageUrl": "https://vibecode1-xi.vercel.app/og-image.png",
+    "screenshotUrls": [
+      "https://vibecode1-xi.vercel.app/screenshot-portrait.png"
+    ]
+  }
 }
 
