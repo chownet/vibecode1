@@ -377,11 +377,15 @@ function App() {
           if (!isOnTestnet) {
             console.warn('Not on Base Sepolia testnet. Some features may not work correctly.');
             // Show a non-blocking warning
-            setTimeout(() => {
-              const network = await provider.getNetwork();
-              const chainId = Number(network.chainId);
-              if (chainId !== networkUtils.BASE_SEPOLIA_CHAIN_ID) {
-                console.log(`Current network: Chain ID ${chainId}. Recommended: Base Sepolia (${networkUtils.BASE_SEPOLIA_CHAIN_ID})`);
+            setTimeout(async () => {
+              try {
+                const network = await provider.getNetwork();
+                const chainId = Number(network.chainId);
+                if (chainId !== networkUtils.BASE_SEPOLIA_CHAIN_ID) {
+                  console.log(`Current network: Chain ID ${chainId}. Recommended: Base Sepolia (${networkUtils.BASE_SEPOLIA_CHAIN_ID})`);
+                }
+              } catch (err) {
+                // Ignore errors in async setTimeout
               }
             }, 1000);
           }
