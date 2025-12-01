@@ -1,0 +1,32 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEwNDk3NTMsInR5cGUiOiJhdXRoIiwia2V5IjoiMHgwNzFhNTU4OEQ3Q2Q1MGZDQzQ4MDFlRTE0RDM3RDZjQUQ1MEQxN0M5In0",
+    "payload": "eyJkb21haW4iOiJhdWN0aW9uaGF1ei52ZXJjZWwuYXBwIn0",
+    "signature": "1noB/H0lirS0igLIQqEoHBQ0u+NuS2YB04yJQe3oI4JURGeodVhGfeek8+Wcvjj82KyczgADP/ZrVJ0Zqg18oRw="
+  },
+  "baseBuilder": {
+    "ownerAddress": "0xd8Dd16cd78Fb2E20AC5de559aB94Af52e8339f51"
+  },
+  "frame": {
+    "name": "Auction Houz",
+    "version": "1",
+    "iconUrl": "https://auctionhauz.vercel.app/icon.png",
+    "homeUrl": "https://auctionhauz.vercel.app",
+    "imageUrl": "https://auctionhauz.vercel.app/image.png",
+    "buttonTitle": "open right meow",
+    "splashImageUrl": "https://auctionhauz.vercel.app/splash.png",
+    "splashBackgroundColor": "#CBC3E3",
+    "webhookUrl": "https://auctionhauz.vercel.app/api/webhook",
+    "subtitle": "Sell all of your wordly possessions",
+    "description": "Sell your grandma's favorite rug, your vintage boots, your soul - whatever you can put a price tag on",
+    "primaryCategory": "utility",
+    "tags": [
+      "auction",
+      "test",
+      "vibecode"
+    ],
+    "tagline": "auction",
+    "ogTitle": "Auction Houz - Sell Everything",
+    "ogDescription": "sell to survive, when ur bored, when ur rich, when ur poor"
+  }
+}
