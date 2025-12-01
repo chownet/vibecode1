@@ -61,7 +61,10 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         
         // Check if contract is deployed
         if (contractUtils.CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
-          throw new Error('Contract not deployed! Please deploy the contract first.');
+          alert('Contract not deployed!\n\nPlease deploy the contract to Base Sepolia testnet first.\n\nSee DEPLOY_TO_TESTNET.md for instructions.');
+          setIsProcessing(false);
+          setTxStatus(null);
+          return;
         }
 
         // Calculate end time (current time + remaining duration in seconds)
