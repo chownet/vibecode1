@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "name": "Farcaster Auction",
+  "subtitle": "Create and bid on auctions",
+  "description": "A decentralized auction platform where users can create auctions, set time limits or auto-accept prices, and bid on items.",
+  "iconUrl": "https://yourdomain.com/icon.png",
+  "splashImageUrl": "https://yourdomain.com/splash.png",
+  "splashBackgroundColor": "#667eea",
+  "homeUrl": "https://yourdomain.com",
+  "webhookUrl": "https://yourdomain.com/api/webhook",
+  "primaryCategory": "social",
+  "tags": ["auction", "marketplace", "trading", "nft"],
+  "heroImageUrl": "https://yourdomain.com/hero.png",
+  "tagline": "Auction anything, bid anywhere",
+  "ogTitle": "Farcaster Auction - Decentralized Auctions",
+  "ogDescription": "Create and participate in auctions on Farcaster",
+  "ogImageUrl": "https://yourdomain.com/og-image.png",
+  "screenshotUrls": [
+    "https://yourdomain.com/screenshot-portrait.png"
+  ]
+}
+

@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "name": "Farcaster Auction",
+  "iconUrl": "https://yourdomain.com/icon.png",
+  "splashImageUrl": "https://yourdomain.com/splash.png",
+  "splashBackgroundColor": "#000000",
+  "webUrl": "https://yourdomain.com",
+  "screenshots": [
+    "https://yourdomain.com/screenshot1.png"
+  ]
+}
+
