@@ -9,12 +9,6 @@
       "permanent": false,
       "statusCode": 307
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/.well-known/(.*)",
-      "destination": "/.well-known/$1"
-    }
   ]
 }
 
