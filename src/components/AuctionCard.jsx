@@ -17,10 +17,18 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
 
   const handleBid = async (e) => {
     e.preventDefault();
+    console.log('Bid button clicked');
+    
     const amount = parseFloat(bidAmount);
+    console.log('Bid amount:', amount);
     
     if (!isConnected || !walletAddress) {
       alert('Please connect your wallet first');
+      return;
+    }
+    
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid bid amount');
       return;
     }
     
@@ -39,6 +47,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       return;
     }
 
+    console.log('Starting bid process...');
     setIsProcessing(true);
     setTxStatus('Preparing transaction...');
 
@@ -61,11 +70,14 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         
         // Check if contract is deployed
         if (contractUtils.CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
-          alert('Contract not deployed!\n\nPlease deploy the contract to Base Sepolia testnet first.\n\nSee DEPLOY_TO_TESTNET.md for instructions.');
+          const deployGuide = 'https://github.com/chownet/vibecode1/blob/main/DEPLOY_TO_TESTNET.md';
+          alert(`Contract not deployed!\n\nTo use testnet (no real funds):\n\n1. Deploy TestUSDC token to Base Sepolia\n2. Deploy AuctionEscrow contract (with TestUSDC address)\n3. Update contract addresses in src/utils/contract.js\n\nSee: ${deployGuide}`);
           setIsProcessing(false);
           setTxStatus(null);
           return;
         }
+        
+        console.log('Creating auction on-chain, contract address:', contractUtils.CONTRACT_ADDRESS);
 
         // Calculate end time (current time + remaining duration in seconds)
         const remainingTime = Math.max(0, auction.endTime - Date.now());
@@ -84,6 +96,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       }
 
       setTxStatus('Requesting transaction approval...');
+      console.log('Placing bid on-chain, auction ID:', onChainAuctionId, 'amount:', amount);
 
       // Use smart contract to place bid (requires wallet approval)
       const txHash = await contractUtils.placeBidOnChain(
@@ -91,6 +104,8 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         onChainAuctionId,
         amount
       );
+      
+      console.log('Bid transaction hash:', txHash);
 
       setTxStatus('Transaction submitted! Waiting for confirmation...');
 

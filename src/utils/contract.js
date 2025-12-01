@@ -151,10 +151,13 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
   try {
     // Check contract address
     if (CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      throw new Error('Contract address not set. Please deploy the contract and set VITE_CONTRACT_ADDRESS.');
+      throw new Error('Contract not deployed! Please deploy to Base Sepolia testnet first. See DEPLOY_TO_TESTNET.md');
     }
 
-    console.log('Getting contract instance at:', CONTRACT_ADDRESS);
+    console.log('Creating auction on-chain...');
+    console.log('Contract address:', CONTRACT_ADDRESS);
+    console.log('End time:', endTime, 'Auto-accept:', autoAcceptPrice);
+    
     const contract = await getContract(provider);
     const signer = await provider.getSigner();
     const contractWithSigner = contract.connect(signer);
@@ -164,14 +167,13 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
       ? parseUSDC(autoAcceptPrice)
       : 0;
     
-    console.log('Calling createAuction with:', { endTime, autoAcceptPriceWei: autoAcceptPriceWei.toString() });
+    console.log('Sending createAuction transaction...');
     
     const tx = await contractWithSigner.createAuction(endTime, autoAcceptPriceWei);
     console.log('Transaction sent:', tx.hash);
-    console.log('Waiting for confirmation...');
     
     const receipt = await tx.wait();
-    console.log('Transaction confirmed:', receipt);
+    console.log('Transaction confirmed');
     
     // Get auction ID from event
     let auctionId = null;
@@ -180,18 +182,16 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
         const parsed = contract.interface.parseLog(log);
         if (parsed && parsed.name === 'AuctionCreated') {
           auctionId = parsed.args.auctionId.toString();
-          console.log('Found AuctionCreated event, auction ID:', auctionId);
+          console.log('Auction created with ID:', auctionId);
           break;
         }
       } catch (e) {
-        // Try next log
         continue;
       }
     }
     
     if (!auctionId) {
       // Fallback: get latest auction ID
-      console.log('Event not found, using auctionCounter as fallback');
       const auctionCounter = await contract.auctionCounter();
       auctionId = auctionCounter.toString();
       console.log('Auction ID from counter:', auctionId);
@@ -201,9 +201,12 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
   } catch (error) {
     console.error('Error creating auction on-chain:', error);
     
-    // Provide more context in error
     if (error.code === 'CALL_EXCEPTION' || error.message?.includes('call revert')) {
-      throw new Error('Contract call failed. Make sure the contract is deployed and you have the correct address.');
+      throw new Error('Contract call failed. Make sure:\n1. Contract is deployed to Base Sepolia\n2. Contract address is correct\n3. You are on Base Sepolia network');
+    }
+    
+    if (error.message?.includes('user rejected')) {
+      throw new Error('Transaction rejected by user');
     }
     
     throw error;
@@ -215,8 +218,12 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
  */
 export async function placeBidOnChain(provider, auctionId, bidAmountUSDC) {
   try {
+    console.log('Placing bid:', { auctionId, bidAmountUSDC });
+    
     // First, approve USDC spending
+    console.log('Approving USDC spending...');
     await approveUSDC(provider, bidAmountUSDC);
+    console.log('USDC approved');
     
     const contract = await getContract(provider);
     const signer = await provider.getSigner();
@@ -224,12 +231,26 @@ export async function placeBidOnChain(provider, auctionId, bidAmountUSDC) {
     
     // Convert USDC to token units
     const bidAmountWei = parseUSDC(bidAmountUSDC);
+    console.log('Bid amount in wei:', bidAmountWei.toString());
     
+    console.log('Sending placeBid transaction...');
     const tx = await contractWithSigner.placeBid(auctionId, bidAmountWei);
+    console.log('Transaction sent:', tx.hash);
+    
     const receipt = await tx.wait();
+    console.log('Bid placed successfully');
     return receipt.hash;
   } catch (error) {
     console.error('Error placing bid on-chain:', error);
+    
+    if (error.message?.includes('user rejected') || error.code === 4001) {
+      throw new Error('Transaction rejected by user');
+    }
+    
+    if (error.message?.includes('Insufficient')) {
+      throw new Error('Insufficient USDC balance or allowance');
+    }
+    
     throw error;
   }
 }

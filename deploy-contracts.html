@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy Contracts to Base Sepolia</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; }
+        h2 { color: #667eea; margin-top: 30px; }
+        .step { 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5568d3; }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .address-box {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .copy-btn {
+            background: #28a745;
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Deploy Contracts to Base Sepolia</h1>
+        <p>Follow these steps to deploy your contracts. Make sure MetaMask is connected to <strong>Base Sepolia</strong> (Chain ID: 84532)</p>
+        
+        <div id="status"></div>
+        
+        <h2>Step 1: Get Testnet ETH</h2>
+        <div class="step">
+            <p>You need testnet ETH for gas fees:</p>
+            <a href="https://www.coinbase.com/faucets/base-ethereum-goerli-faucet" target="_blank">
+                <button>Get Testnet ETH</button>
+            </a>
+        </div>
+
+        <h2>Step 2: Deploy via Remix IDE</h2>
+        <div class="step">
+            <p><strong>This is the easiest way - use Remix IDE in your browser:</strong></p>
+            <ol>
+                <li>Open <a href="https://remix.ethereum.org" target="_blank">Remix IDE</a></li>
+                <li>Create file: <code>TestUSDC.sol</code></li>
+                <li>Copy the code below into Remix</li>
+                <li>Compile with Solidity 0.8.20</li>
+                <li>Deploy to Base Sepolia</li>
+                <li>Copy the deployed address</li>
+            </ol>
+        </div>
+
+        <h3>TestUSDC Contract Code:</h3>
+        <div class="code-block" id="testUSDCcode"></div>
+        <button onclick="copyCode('testUSDCcode')">Copy TestUSDC Code</button>
+
+        <h3>AuctionEscrow Contract Code:</h3>
+        <div class="code-block" id="auctionCode"></div>
+        <button onclick="copyCode('auctionCode')">Copy AuctionEscrow Code</button>
+
+        <h2>Step 3: Update Contract Addresses</h2>
+        <div class="step">
+            <p>After deploying, enter your contract addresses below:</p>
+            <label>TestUSDC Address:</label>
+            <input type="text" id="usdcAddress" placeholder="0x..." style="width: 100%; padding: 10px; margin: 10px 0; border: 2px solid #ddd; border-radius: 6px;">
+            
+            <label>AuctionEscrow Address:</label>
+            <input type="text" id="contractAddress" placeholder="0x..." style="width: 100%; padding: 10px; margin: 10px 0; border: 2px solid #ddd; border-radius: 6px;">
+            
+            <button onclick="updateAddresses()">Update contract.js</button>
+            <div id="updateStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load contract code
+        async function loadContractCode() {
+            try {
+                const testUSDC = await fetch('contracts/TestUSDC.sol').then(r => r.text());
+                document.getElementById('testUSDCcode').textContent = testUSDC;
+            } catch (e) {
+                document.getElementById('testUSDCcode').textContent = '// File not found - check contracts/TestUSDC.sol';
+            }
+            
+            try {
+                const auction = await fetch('contracts/AuctionEscrow.sol').then(r => r.text());
+                document.getElementById('auctionCode').textContent = auction;
+            } catch (e) {
+                document.getElementById('auctionCode').textContent = '// File not found - check contracts/AuctionEscrow.sol';
+            }
+        }
+
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copied to clipboard!');
+            });
+        }
+
+        function updateAddresses() {
+            const usdcAddress = document.getElementById('usdcAddress').value.trim();
+            const contractAddress = document.getElementById('contractAddress').value.trim();
+            
+            if (!usdcAddress || !contractAddress) {
+                alert('Please enter both addresses');
+                return;
+            }
+            
+            if (!usdcAddress.startsWith('0x') || !contractAddress.startsWith('0x')) {
+                alert('Addresses must start with 0x');
+                return;
+            }
+            
+            // Create the update code
+            const updateCode = `
+// Update src/utils/contract.js with these values:
+
+export const CONTRACT_ADDRESS = '${contractAddress}';
+export const USDC_ADDRESS_TESTNET = '${usdcAddress}';
+`;
+            
+            document.getElementById('updateStatus').innerHTML = `
+                <div class="status success">
+                    <strong>Copy this code and update src/utils/contract.js:</strong>
+                    <div class="code-block">${updateCode}</div>
+                    <button onclick="copyUpdateCode()" class="copy-btn">Copy Update Code</button>
+                </div>
+            `;
+        }
+
+        function copyUpdateCode() {
+            const code = document.getElementById('updateStatus').querySelector('.code-block').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Update code copied! Paste it into src/utils/contract.js');
+            });
+        }
+
+        loadContractCode();
+    </script>
+</body>
+</html>
+
