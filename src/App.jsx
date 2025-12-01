@@ -185,6 +185,12 @@ function App() {
       return;
     }
 
+    // Check if contract address is set
+    if (contractUtils.CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      alert('Contract not deployed! Please deploy the contract first and set VITE_CONTRACT_ADDRESS in your .env file or update src/utils/contract.js');
+      return;
+    }
+
     try {
       // Calculate end time (current time + duration in seconds)
       const endTime = Math.floor(Date.now() / 1000) + (auctionData.durationMinutes * 60);
@@ -192,12 +198,16 @@ function App() {
       // Convert autoAcceptPrice from USDC (0 if not set)
       const autoAcceptPrice = auctionData.autoAcceptPrice || 0;
 
+      console.log('Creating auction on-chain...', { endTime, autoAcceptPrice });
+
       // Create auction on-chain
       const onChainAuctionId = await contractUtils.createAuctionOnChain(
         new ethers.BrowserProvider(ethProvider),
         endTime,
         autoAcceptPrice
       );
+
+      console.log('Auction created on-chain with ID:', onChainAuctionId);
 
       // Create local auction record
       const newAuction = {
@@ -215,9 +225,28 @@ function App() {
       
       setAuctions([newAuction, ...auctions]);
       setView('list');
+      
+      // Show success message
+      alert(`Auction created successfully! On-chain ID: ${onChainAuctionId}`);
     } catch (error) {
       console.error('Error creating auction:', error);
-      alert('Failed to create auction on-chain: ' + (error.message || 'Unknown error'));
+      
+      // Provide more detailed error messages
+      let errorMessage = 'Failed to create auction: ';
+      if (error.message) {
+        errorMessage += error.message;
+      } else if (error.reason) {
+        errorMessage += error.reason;
+      } else {
+        errorMessage += 'Unknown error. Check console for details.';
+      }
+      
+      // Check for common errors
+      if (error.message?.includes('contract') || error.message?.includes('address')) {
+        errorMessage += '\n\nMake sure the contract is deployed and VITE_CONTRACT_ADDRESS is set correctly.';
+      }
+      
+      alert(errorMessage);
     }
   };
 

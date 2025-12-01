@@ -149,6 +149,12 @@ export async function getUSDCBalance(provider, address) {
  */
 export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
   try {
+    // Check contract address
+    if (CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      throw new Error('Contract address not set. Please deploy the contract and set VITE_CONTRACT_ADDRESS.');
+    }
+
+    console.log('Getting contract instance at:', CONTRACT_ADDRESS);
     const contract = await getContract(provider);
     const signer = await provider.getSigner();
     const contractWithSigner = contract.connect(signer);
@@ -158,29 +164,48 @@ export async function createAuctionOnChain(provider, endTime, autoAcceptPrice) {
       ? parseUSDC(autoAcceptPrice)
       : 0;
     
+    console.log('Calling createAuction with:', { endTime, autoAcceptPriceWei: autoAcceptPriceWei.toString() });
+    
     const tx = await contractWithSigner.createAuction(endTime, autoAcceptPriceWei);
+    console.log('Transaction sent:', tx.hash);
+    console.log('Waiting for confirmation...');
+    
     const receipt = await tx.wait();
+    console.log('Transaction confirmed:', receipt);
     
     // Get auction ID from event
-    const event = receipt.logs.find(log => {
+    let auctionId = null;
+    for (const log of receipt.logs) {
       try {
         const parsed = contract.interface.parseLog(log);
-        return parsed && parsed.name === 'AuctionCreated';
-      } catch {
-        return false;
+        if (parsed && parsed.name === 'AuctionCreated') {
+          auctionId = parsed.args.auctionId.toString();
+          console.log('Found AuctionCreated event, auction ID:', auctionId);
+          break;
+        }
+      } catch (e) {
+        // Try next log
+        continue;
       }
-    });
-    
-    if (event) {
-      const parsed = contract.interface.parseLog(event);
-      return parsed.args.auctionId.toString();
     }
     
-    // Fallback: get latest auction ID
-    const auctionCounter = await contract.auctionCounter();
-    return auctionCounter.toString();
+    if (!auctionId) {
+      // Fallback: get latest auction ID
+      console.log('Event not found, using auctionCounter as fallback');
+      const auctionCounter = await contract.auctionCounter();
+      auctionId = auctionCounter.toString();
+      console.log('Auction ID from counter:', auctionId);
+    }
+    
+    return auctionId;
   } catch (error) {
     console.error('Error creating auction on-chain:', error);
+    
+    // Provide more context in error
+    if (error.code === 'CALL_EXCEPTION' || error.message?.includes('call revert')) {
+      throw new Error('Contract call failed. Make sure the contract is deployed and you have the correct address.');
+    }
+    
     throw error;
   }
 }

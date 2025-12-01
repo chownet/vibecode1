@@ -9,8 +9,9 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
     durationMinutes: '60',
     autoAcceptPrice: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!isConnected || !walletAddress) {
@@ -23,24 +24,33 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
       return;
     }
 
-    onCreate({
-      title: formData.title,
-      description: formData.description,
-      imageUrl: formData.imageUrl || null,
-      startingPrice: parseFloat(formData.startingPrice) || 0,
-      durationMinutes: parseInt(formData.durationMinutes) || 60,
-      autoAcceptPrice: formData.autoAcceptPrice ? parseFloat(formData.autoAcceptPrice) : null
-    });
+    setIsSubmitting(true);
 
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      imageUrl: '',
-      startingPrice: '',
-      durationMinutes: '60',
-      autoAcceptPrice: ''
-    });
+    try {
+      await onCreate({
+        title: formData.title,
+        description: formData.description,
+        imageUrl: formData.imageUrl || null,
+        startingPrice: parseFloat(formData.startingPrice) || 0,
+        durationMinutes: parseInt(formData.durationMinutes) || 60,
+        autoAcceptPrice: formData.autoAcceptPrice ? parseFloat(formData.autoAcceptPrice) : null
+      });
+
+      // Reset form only on success
+      setFormData({
+        title: '',
+        description: '',
+        imageUrl: '',
+        startingPrice: '',
+        durationMinutes: '60',
+        autoAcceptPrice: ''
+      });
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      // Error is already handled in createAuction
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -153,8 +163,8 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
           />
         </div>
 
-        <button type="submit" className="create-button">
-          Create Auction
+        <button type="submit" className="create-button" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating Auction...' : 'Create Auction'}
         </button>
       </form>
     </div>
