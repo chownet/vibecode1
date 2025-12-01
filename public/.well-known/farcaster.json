@@ -23,6 +23,12 @@
     "ogImageUrl": "https://vibecode1-xi.vercel.app/og-image.png",
     "screenshotUrls": [
       "https://vibecode1-xi.vercel.app/screenshot-portrait.png"
+    ],
+    "canonicalDomain": "vibecode1-xi.vercel.app",
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": [
+      "actions.ready",
+      "actions.signIn"
     ]
   }
 }
