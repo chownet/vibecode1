@@ -154,7 +154,7 @@ function App() {
       // Calculate end time (current time + duration in seconds)
       const endTime = Math.floor(Date.now() / 1000) + (auctionData.durationMinutes * 60);
       
-      // Convert autoAcceptPrice from ETH to wei (0 if not set)
+      // Convert autoAcceptPrice from USDC (0 if not set)
       const autoAcceptPrice = auctionData.autoAcceptPrice || 0;
 
       // Create auction on-chain
@@ -349,9 +349,9 @@ function App() {
                 <button 
                   onClick={withdrawRefunds}
                   className="withdraw-refund-btn"
-                  title={`Withdraw ${parseFloat(pendingRefunds).toFixed(4)} ETH in refunds`}
+                  title={`Withdraw ${parseFloat(pendingRefunds).toFixed(4)} USDC in refunds`}
                 >
-                  💰 {parseFloat(pendingRefunds).toFixed(4)} ETH refunds
+                  💰 {parseFloat(pendingRefunds).toFixed(4)} USDC refunds
                 </button>
               )}
             </div>

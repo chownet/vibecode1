@@ -3,10 +3,20 @@ pragma solidity ^0.8.20;
 
 /**
  * @title AuctionEscrow
- * @dev Smart contract for managing auction bids with escrow functionality
- * Holds funds until auction ends, returns funds to outbid users, transfers to seller on close
+ * @dev Smart contract for managing auction bids with USDC escrow functionality
+ * Holds USDC until auction ends, returns USDC to outbid users, transfers USDC to seller on close
  */
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
+}
+
 contract AuctionEscrow {
+    IERC20 public usdcToken;
+    
     struct Auction {
         address seller;
         uint256 endTime;
@@ -43,8 +53,9 @@ contract AuctionEscrow {
         _;
     }
 
-    constructor() {
+    constructor(address _usdcToken) {
         owner = msg.sender;
+        usdcToken = IERC20(_usdcToken);
     }
 
     /**
@@ -73,16 +84,24 @@ contract AuctionEscrow {
     }
 
     /**
-     * @dev Place a bid on an auction
+     * @dev Place a bid on an auction using USDC
      * @param auctionId The auction to bid on
+     * @param bidAmount Amount of USDC to bid (in USDC units, 6 decimals)
      */
-    function placeBid(uint256 auctionId) external payable {
+    function placeBid(uint256 auctionId, uint256 bidAmount) external {
         Auction storage auction = auctions[auctionId];
         
         require(auction.isActive && !auction.isClosed, "Auction not active");
         require(block.timestamp < auction.endTime, "Auction has ended");
-        require(msg.value > 0, "Bid amount must be greater than 0");
-        require(msg.value > auction.highestBid, "Bid must be higher than current highest bid");
+        require(bidAmount > 0, "Bid amount must be greater than 0");
+        require(bidAmount > auction.highestBid, "Bid must be higher than current highest bid");
+
+        // Check user has enough USDC and has approved this contract
+        require(usdcToken.balanceOf(msg.sender) >= bidAmount, "Insufficient USDC balance");
+        require(usdcToken.allowance(msg.sender, address(this)) >= bidAmount, "Insufficient USDC allowance");
+
+        // Transfer USDC from bidder to contract
+        require(usdcToken.transferFrom(msg.sender, address(this), bidAmount), "USDC transfer failed");
 
         // Refund previous highest bidder if exists
         if (auction.highestBidder != address(0) && auction.highestBid > 0) {
@@ -98,19 +117,19 @@ contract AuctionEscrow {
         
         bids[auctionId][msg.sender] = Bid({
             bidder: msg.sender,
-            amount: msg.value,
+            amount: bidAmount,
             timestamp: block.timestamp,
             refunded: false
         });
 
         // Update auction
-        auction.highestBid = msg.value;
+        auction.highestBid = bidAmount;
         auction.highestBidder = msg.sender;
 
-        emit BidPlaced(auctionId, msg.sender, msg.value);
+        emit BidPlaced(auctionId, msg.sender, bidAmount);
 
         // Check if auto-accept price is reached
-        if (auction.autoAcceptPrice > 0 && msg.value >= auction.autoAcceptPrice) {
+        if (auction.autoAcceptPrice > 0 && bidAmount >= auction.autoAcceptPrice) {
             _closeAuction(auctionId);
         }
     }
@@ -147,17 +166,16 @@ contract AuctionEscrow {
             }
         }
 
-        // Transfer winning bid to seller
+        // Transfer winning bid USDC to seller
         if (auction.highestBid > 0 && auction.highestBidder != address(0)) {
-            (bool success, ) = auction.seller.call{value: auction.highestBid}("");
-            require(success, "Transfer to seller failed");
+            require(usdcToken.transfer(auction.seller, auction.highestBid), "USDC transfer to seller failed");
         }
 
         emit AuctionClosed(auctionId, auction.highestBidder, auction.highestBid);
     }
 
     /**
-     * @dev Allow users to withdraw their refunded bids
+     * @dev Allow users to withdraw their refunded USDC
      */
     function withdrawRefund() external {
         uint256 amount = pendingRefunds[msg.sender];
@@ -165,8 +183,7 @@ contract AuctionEscrow {
 
         pendingRefunds[msg.sender] = 0;
         
-        (bool success, ) = msg.sender.call{value: amount}("");
-        require(success, "Refund transfer failed");
+        require(usdcToken.transfer(msg.sender, amount), "USDC refund transfer failed");
     }
 
     /**
@@ -214,11 +231,10 @@ contract AuctionEscrow {
     }
 
     /**
-     * @dev Emergency function to withdraw contract balance (owner only)
+     * @dev Emergency function to withdraw USDC (owner only)
      */
     function emergencyWithdraw() external onlyOwner {
-        (bool success, ) = owner.call{value: address(this).balance}("");
-        require(success, "Emergency withdraw failed");
+        uint256 balance = usdcToken.balanceOf(address(this));
+        require(usdcToken.transfer(owner, balance), "Emergency withdraw failed");
     }
 }
-

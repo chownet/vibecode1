@@ -25,7 +25,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
     }
     
     if (amount < minBid) {
-      alert(`Minimum bid is ${minBid.toFixed(2)} ETH`);
+      alert(`Minimum bid is ${minBid.toFixed(2)} USDC`);
       return;
     }
     
@@ -93,9 +93,9 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
         setTxStatus('Transaction rejected by user');
         alert('Transaction was rejected. Please try again.');
-      } else if (error.message && error.message.includes('insufficient funds')) {
-        setTxStatus('Insufficient funds');
-        alert('You do not have enough ETH to place this bid.');
+      } else if (error.message && error.message.includes('insufficient') || error.message.includes('Insufficient')) {
+        setTxStatus('Insufficient USDC');
+        alert('You do not have enough USDC to place this bid. Please check your USDC balance and allowance.');
       } else if (error.message && error.message.includes('Bid must be higher')) {
         setTxStatus('Bid too low');
         alert('Your bid must be higher than the current highest bid.');
@@ -139,12 +139,12 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         <div className="bid-info">
           <div className="current-bid">
             <span className="label">Current Bid:</span>
-            <span className="amount">{highestBid.toFixed(2)} ETH</span>
+            <span className="amount">{highestBid.toFixed(2)} USDC</span>
           </div>
           {auction.autoAcceptPrice && (
             <div className="auto-accept-price">
               <span className="label">Auto-Accept:</span>
-              <span className="amount">{auction.autoAcceptPrice.toFixed(2)} ETH</span>
+              <span className="amount">{auction.autoAcceptPrice.toFixed(2)} USDC</span>
             </div>
           )}
           <div className="bid-count">
@@ -160,7 +160,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
                 : '⏰ Auction Ended'}
               {auction.winner && (
                 <div className="winner-info">
-                  Winner: @{auction.winner.bidder} ({auction.winner.amount.toFixed(2)} ETH)
+                  Winner: @{auction.winner.bidder} ({auction.winner.amount.toFixed(2)} USDC)
                 </div>
               )}
             </div>
@@ -188,10 +188,10 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
                   min={minBid}
                   value={bidAmount}
                   onChange={(e) => setBidAmount(e.target.value)}
-                  placeholder={`Min: ${minBid.toFixed(2)} ETH`}
+                  placeholder={`Min: ${minBid.toFixed(2)} USDC`}
                   className="bid-input"
                 />
-                <span className="eth-label">ETH</span>
+                <span className="eth-label">USDC</span>
               </div>
               {auction.autoAcceptPrice && parseFloat(bidAmount) >= auction.autoAcceptPrice && (
                 <div className="auto-accept-warning">
@@ -244,7 +244,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
               <li key={bid.id}>
                 <div className="bid-row">
                   <span className="bidder">@{bid.bidder}</span>
-                  <span className="bid-amount">{bid.amount.toFixed(2)} ETH</span>
+                  <span className="bid-amount">{bid.amount.toFixed(2)} USDC</span>
                 </div>
                 {bid.transactionHash && (
                   <div className="bid-tx">

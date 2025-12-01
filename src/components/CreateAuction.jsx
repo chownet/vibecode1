@@ -104,7 +104,7 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="startingPrice">Starting Price (ETH)</label>
+            <label htmlFor="startingPrice">Starting Price (USDC)</label>
             <input
               type="number"
               id="startingPrice"
@@ -138,7 +138,7 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
 
         <div className="form-group">
           <label htmlFor="autoAcceptPrice">
-            Auto-Accept Price (ETH) 
+            Auto-Accept Price (USDC) 
             <span className="field-hint">(optional - auction closes immediately when this price is reached)</span>
           </label>
           <input
