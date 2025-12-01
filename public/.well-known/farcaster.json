@@ -1,26 +1,4 @@
 {
-  "frame": {
-    "name": "Auction Houz",
-    "version": "1",
-    "iconUrl": "https://vibecode1-xi.vercel.app/icon.png",
-    "homeUrl": "https://vibecode1-xi.vercel.app",
-    "imageUrl": "https://vibecode1-xi.vercel.app/image.png",
-    "buttonTitle": "open right meow",
-    "splashImageUrl": "https://vibecode1-xi.vercel.app/splash.png",
-    "splashBackgroundColor": "#CBC3E3",
-    "webhookUrl": "https://vibecode1-xi.vercel.app/api/webhook",
-    "subtitle": "Sell all of your wordly possessions",
-    "description": "Sell your grandma's favorite rug, your vintage boots, your soul - whatever you can put a price tag on",
-    "primaryCategory": "utility",
-    "tags": [
-      "auction",
-      "test",
-      "vibecode"
-    ],
-    "tagline": "auction",
-    "ogTitle": "Auction Houz - Sell Everything",
-    "ogDescription": "sell to survive, when ur bored, when ur rich, when ur poor"
-  },
   "miniapp": {
     "version": "1",
     "name": "Auction Houz",
@@ -50,8 +28,5 @@
     "header": "eyJmaWQiOjEwNDk3NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhGYWEzMzczYUNCNkZBYzA4Q0VkNkQ0OTU0MzdkMjlGNjY3NTAyOTk5In0",
     "payload": "eyJkb21haW4iOiJ2aWJlY29kZTEteGkudmVyY2VsLmFwcCJ9",
     "signature": "otVc1Tfm2yWIvPLJ/LWiE4YhIj0391jRvznblz6IubpfjFk5R2+5mFvVuUGZ/qyZSWfCek9tBOMcCU/E4JlS2Bw="
-  },
-  "baseBuilder": {
-    "ownerAddress": "0xd8Dd16cd78Fb2E20AC5de559aB94Af52e8339f51"
   }
 }
