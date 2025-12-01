@@ -30,6 +30,9 @@
       "actions.ready",
       "actions.signIn"
     ]
+  },
+  "baseBuilder": {
+    "ownerAddress": ""
   }
 }
 
