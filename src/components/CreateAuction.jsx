@@ -9,48 +9,34 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
     durationMinutes: '60',
     autoAcceptPrice: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!isConnected || !walletAddress) {
-      alert('Please connect your wallet first to create an auction');
-      return;
-    }
-
     if (!formData.title || !formData.description) {
       alert('Please fill in all required fields');
       return;
     }
 
-    setIsSubmitting(true);
+    // Create auction locally - no wallet needed
+    onCreate({
+      title: formData.title,
+      description: formData.description,
+      imageUrl: formData.imageUrl || null,
+      startingPrice: parseFloat(formData.startingPrice) || 0,
+      durationMinutes: parseInt(formData.durationMinutes) || 60,
+      autoAcceptPrice: formData.autoAcceptPrice ? parseFloat(formData.autoAcceptPrice) : null
+    });
 
-    try {
-      await onCreate({
-        title: formData.title,
-        description: formData.description,
-        imageUrl: formData.imageUrl || null,
-        startingPrice: parseFloat(formData.startingPrice) || 0,
-        durationMinutes: parseInt(formData.durationMinutes) || 60,
-        autoAcceptPrice: formData.autoAcceptPrice ? parseFloat(formData.autoAcceptPrice) : null
-      });
-
-      // Reset form only on success
-      setFormData({
-        title: '',
-        description: '',
-        imageUrl: '',
-        startingPrice: '',
-        durationMinutes: '60',
-        autoAcceptPrice: ''
-      });
-    } catch (error) {
-      console.error('Error in handleSubmit:', error);
-      // Error is already handled in createAuction
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Reset form
+    setFormData({
+      title: '',
+      description: '',
+      imageUrl: '',
+      startingPrice: '',
+      durationMinutes: '60',
+      autoAcceptPrice: ''
+    });
   };
 
   const handleChange = (e) => {
@@ -60,15 +46,6 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
     });
   };
 
-  if (!isConnected) {
-    return (
-      <div className="create-auction">
-        <div className="connect-prompt-large">
-          <p>Please connect your wallet to create an auction</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="create-auction">
@@ -163,8 +140,8 @@ function CreateAuction({ onCreate, user, isConnected, walletAddress }) {
           />
         </div>
 
-        <button type="submit" className="create-button" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating Auction...' : 'Create Auction'}
+        <button type="submit" className="create-button">
+          Create Auction
         </button>
       </form>
     </div>

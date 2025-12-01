@@ -39,12 +39,6 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       return;
     }
 
-    // Check if auction has on-chain ID
-    if (!auction.onChainId) {
-      alert('Auction not found on-chain. Please refresh and try again.');
-      return;
-    }
-
     setIsProcessing(true);
     setTxStatus('Preparing transaction...');
 
@@ -58,13 +52,40 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
         return;
       }
 
+      const provider = new ethers.BrowserProvider(ethProvider);
+      let onChainAuctionId = auction.onChainId;
+
+      // If auction doesn't have on-chain ID yet, create it on-chain first
+      if (!onChainAuctionId) {
+        setTxStatus('Creating auction on-chain...');
+        
+        // Check if contract is deployed
+        if (contractUtils.CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+          throw new Error('Contract not deployed! Please deploy the contract first.');
+        }
+
+        // Calculate end time (current time + remaining duration in seconds)
+        const remainingTime = Math.max(0, auction.endTime - Date.now());
+        const endTime = Math.floor(Date.now() / 1000) + Math.floor(remainingTime / 1000);
+        const autoAcceptPrice = auction.autoAcceptPrice || 0;
+
+        // Create auction on-chain
+        onChainAuctionId = await contractUtils.createAuctionOnChain(
+          provider,
+          endTime,
+          autoAcceptPrice
+        );
+
+        // Update auction with on-chain ID
+        onBid(auction.id, 0, null, onChainAuctionId); // Update auction with onChainId
+      }
+
       setTxStatus('Requesting transaction approval...');
 
-      // Use smart contract to place bid
-      const provider = new ethers.BrowserProvider(ethProvider);
+      // Use smart contract to place bid (requires wallet approval)
       const txHash = await contractUtils.placeBidOnChain(
         provider,
-        auction.onChainId,
+        onChainAuctionId,
         amount
       );
 
@@ -76,7 +97,7 @@ function AuctionCard({ auction, onBid, user, isConnected, walletAddress, ethProv
       if (receipt && receipt.status === 1) {
         setTxStatus('Transaction confirmed!');
         // Record the bid with transaction hash
-        onBid(auction.id, amount, txHash, auction.onChainId);
+        onBid(auction.id, amount, txHash, onChainAuctionId);
         setBidAmount('');
         setShowBidForm(false);
         

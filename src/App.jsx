@@ -179,75 +179,25 @@ function App() {
     return () => clearInterval(interval);
   }, [auctions.length, ethProvider]);
 
-  const createAuction = async (auctionData) => {
-    if (!ethProvider || !walletAddress) {
-      alert('Please connect your wallet to create an auction');
-      return;
-    }
-
-    // Check if contract address is set
-    if (contractUtils.CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      alert('Contract not deployed! Please deploy the contract first and set VITE_CONTRACT_ADDRESS in your .env file or update src/utils/contract.js');
-      return;
-    }
-
-    try {
-      // Calculate end time (current time + duration in seconds)
-      const endTime = Math.floor(Date.now() / 1000) + (auctionData.durationMinutes * 60);
-      
-      // Convert autoAcceptPrice from USDC (0 if not set)
-      const autoAcceptPrice = auctionData.autoAcceptPrice || 0;
-
-      console.log('Creating auction on-chain...', { endTime, autoAcceptPrice });
-
-      // Create auction on-chain
-      const onChainAuctionId = await contractUtils.createAuctionOnChain(
-        new ethers.BrowserProvider(ethProvider),
-        endTime,
-        autoAcceptPrice
-      );
-
-      console.log('Auction created on-chain with ID:', onChainAuctionId);
-
-      // Create local auction record
-      const newAuction = {
-        id: Date.now().toString(),
-        onChainId: onChainAuctionId, // Link to on-chain auction
-        ...auctionData,
-        creator: user?.username || 'Anonymous',
-        creatorFid: user?.fid || null,
-        creatorAddress: walletAddress,
-        createdAt: Date.now(),
-        endTime: endTime * 1000, // Convert to milliseconds
-        bids: [],
-        status: 'active'
-      };
-      
-      setAuctions([newAuction, ...auctions]);
-      setView('list');
-      
-      // Show success message
-      alert(`Auction created successfully! On-chain ID: ${onChainAuctionId}`);
-    } catch (error) {
-      console.error('Error creating auction:', error);
-      
-      // Provide more detailed error messages
-      let errorMessage = 'Failed to create auction: ';
-      if (error.message) {
-        errorMessage += error.message;
-      } else if (error.reason) {
-        errorMessage += error.reason;
-      } else {
-        errorMessage += 'Unknown error. Check console for details.';
-      }
-      
-      // Check for common errors
-      if (error.message?.includes('contract') || error.message?.includes('address')) {
-        errorMessage += '\n\nMake sure the contract is deployed and VITE_CONTRACT_ADDRESS is set correctly.';
-      }
-      
-      alert(errorMessage);
-    }
+  const createAuction = (auctionData) => {
+    // Create auction locally - no wallet transaction needed
+    // Only bidding requires wallet approval to send USDC to escrow
+    
+    const newAuction = {
+      id: Date.now().toString(),
+      onChainId: null, // Will be created on-chain when first bid is placed
+      ...auctionData,
+      creator: user?.username || 'Anonymous',
+      creatorFid: user?.fid || null,
+      creatorAddress: walletAddress || null,
+      createdAt: Date.now(),
+      endTime: Date.now() + (auctionData.durationMinutes * 60 * 1000),
+      bids: [],
+      status: 'active'
+    };
+    
+    setAuctions([newAuction, ...auctions]);
+    setView('list');
   };
 
   const placeBid = async (auctionId, bidAmount, transactionHash, onChainAuctionId) => {
