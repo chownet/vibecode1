@@ -27,10 +27,24 @@ function App() {
           return;
         }
 
+        // Initialize SDK and get context
+        await sdk.actions.ready();
         const context = await sdk.context.getContext();
+        
         if (context?.user) {
           setUser(context.user);
           setIsConnected(true);
+        } else {
+          // If no user context, try to sign in
+          try {
+            const signInResult = await sdk.actions.signIn();
+            if (signInResult?.user) {
+              setUser(signInResult.user);
+              setIsConnected(true);
+            }
+          } catch (signInError) {
+            console.warn('Sign in not available', signInError);
+          }
         }
       } catch (error) {
         console.warn('Farcaster context unavailable', error);
@@ -135,12 +149,21 @@ function App() {
 
   const connectWallet = async () => {
     try {
-      const provider = await sdk.wallet.getEthereumProvider();
-      if (provider) {
+      const inMiniApp = await sdk.isInMiniApp?.();
+      if (!inMiniApp) {
+        alert('Please open this app in the Base or Farcaster app to connect');
+        return;
+      }
+
+      // Sign in using Farcaster SDK
+      const signInResult = await sdk.actions.signIn();
+      if (signInResult?.user) {
+        setUser(signInResult.user);
         setIsConnected(true);
       }
     } catch (error) {
-      console.error('Failed to connect wallet:', error);
+      console.error('Failed to sign in:', error);
+      alert('Failed to sign in. Please try again.');
     }
   };
 
