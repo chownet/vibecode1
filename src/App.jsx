@@ -17,15 +17,27 @@ function App() {
       setAuctions(JSON.parse(savedAuctions));
     }
 
-    // Initialize Farcaster SDK
-    sdk.initialize().then(() => {
-      sdk.context.getContext().then((context) => {
+    const initFarcaster = async () => {
+      try {
+        const inMiniApp = await sdk.isInMiniApp?.();
+        if (!inMiniApp) {
+          // Provide a lightweight local dev experience
+          setUser({ username: 'local-user', fid: '0' });
+          setIsConnected(false);
+          return;
+        }
+
+        const context = await sdk.context.getContext();
         if (context?.user) {
           setUser(context.user);
           setIsConnected(true);
         }
-      });
-    });
+      } catch (error) {
+        console.warn('Farcaster context unavailable', error);
+      }
+    };
+
+    initFarcaster();
   }, []);
 
   useEffect(() => {
