@@ -1,9 +1,4 @@
 {
-  "accountAssociation": {
-    "header": "",
-    "payload": "",
-    "signature": ""
-  },
   "miniapp": {
     "version": "1",
     "name": "Farcaster Auction",
@@ -30,9 +25,6 @@
       "actions.ready",
       "actions.signIn"
     ]
-  },
-  "baseBuilder": {
-    "ownerAddress": ""
   }
 }
 
