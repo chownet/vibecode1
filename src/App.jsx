@@ -3,6 +3,8 @@ import { sdk } from '@farcaster/miniapp-sdk';
 import { ethers } from 'ethers';
 import AuctionList from './components/AuctionList';
 import CreateAuction from './components/CreateAuction';
+import ChatList from './components/ChatList';
+import Chat from './components/Chat';
 import * as contractUtils from './utils/contract';
 import './App.css';
 
@@ -14,6 +16,9 @@ function App() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [ethProvider, setEthProvider] = useState(null);
   const [pendingRefunds, setPendingRefunds] = useState('0');
+  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [showChats, setShowChats] = useState(false);
 
   useEffect(() => {
     // Load auctions from localStorage
@@ -21,6 +26,13 @@ function App() {
     if (savedAuctions) {
       setAuctions(JSON.parse(savedAuctions));
     }
+
+    // Load chats from localStorage
+    const savedChats = JSON.parse(localStorage.getItem('chats') || '{}');
+    const chatArray = Object.values(savedChats).filter(chat => 
+      chat.sellerAddress === walletAddress || chat.buyerAddress === walletAddress
+    );
+    setChats(chatArray);
 
     const initFarcaster = async () => {
       try {
@@ -109,13 +121,20 @@ function App() {
               auctionsToClose.push(auction.onChainId);
             }
             
-            return {
+            const updatedAuction = {
               ...auction,
               status: 'closed',
               closedAt: now,
               closedReason: timeLimitReached ? 'time_limit' : 'price_reached',
               winner: auction.bids.length > 0 ? auction.bids[0] : null
             };
+
+            // Create chat when auction closes with a winner
+            if (updatedAuction.winner && updatedAuction.winner.bidderAddress) {
+              createChatForAuction(updatedAuction);
+            }
+            
+            return updatedAuction;
           }
           
           return auction;
@@ -213,6 +232,11 @@ function App() {
             updatedAuction.closedAt = Date.now();
             updatedAuction.closedReason = 'price_reached';
             updatedAuction.winner = updatedAuction.bids[0];
+            
+            // Create chat for closed auction
+            if (updatedAuction.winner && updatedAuction.winner.bidderAddress) {
+              createChatForAuction(updatedAuction);
+            }
           }
 
           return updatedAuction;
@@ -245,6 +269,41 @@ function App() {
       } catch (error) {
         console.warn('Error syncing with contract:', error);
       }
+    }
+  };
+
+  const createChatForAuction = (auction) => {
+    if (!auction.winner || !auction.winner.bidderAddress) return;
+
+    const chatId = `chat-${auction.id}`;
+    const savedChats = JSON.parse(localStorage.getItem('chats') || '{}');
+    
+    // Check if chat already exists
+    if (savedChats[chatId]) return;
+
+    const newChat = {
+      id: chatId,
+      auctionId: auction.id,
+      auctionTitle: auction.title,
+      sellerAddress: auction.creatorAddress,
+      sellerUsername: auction.creator,
+      buyerAddress: auction.winner.bidderAddress,
+      buyerUsername: auction.winner.bidder,
+      winningBid: auction.winner.amount,
+      createdAt: Date.now(),
+      messages: []
+    };
+
+    savedChats[chatId] = newChat;
+    localStorage.setItem('chats', JSON.stringify(savedChats));
+
+    // Update chats state if user is involved
+    if (walletAddress && (newChat.sellerAddress === walletAddress || newChat.buyerAddress === walletAddress)) {
+      setChats(prevChats => {
+        const exists = prevChats.find(c => c.id === chatId);
+        if (exists) return prevChats;
+        return [...prevChats, newChat];
+      });
     }
   };
 
@@ -361,37 +420,74 @@ function App() {
 
       <nav className="app-nav">
         <button 
-          onClick={() => setView('list')} 
-          className={view === 'list' ? 'active' : ''}
+          onClick={() => {
+            setView('list');
+            setShowChats(false);
+            setSelectedChat(null);
+          }} 
+          className={view === 'list' && !showChats ? 'active' : ''}
         >
           Auctions
         </button>
         <button 
-          onClick={() => setView('create')} 
+          onClick={() => {
+            setView('create');
+            setShowChats(false);
+            setSelectedChat(null);
+          }} 
           className={view === 'create' ? 'active' : ''}
         >
           Create Auction
         </button>
+        <button 
+          onClick={() => {
+            setShowChats(true);
+            setSelectedChat(null);
+            setView('list');
+          }} 
+          className={showChats ? 'active' : ''}
+        >
+          Messages {chats.length > 0 && <span className="nav-badge">{chats.length}</span>}
+        </button>
       </nav>
 
       <main className="app-main">
-        {view === 'list' && (
-          <AuctionList 
-            auctions={auctions} 
-            onBid={placeBid}
-            user={user}
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-            ethProvider={ethProvider}
-          />
-        )}
-        {view === 'create' && (
-          <CreateAuction 
-            onCreate={createAuction}
-            user={user}
-            isConnected={isConnected}
-            walletAddress={walletAddress}
-          />
+        {showChats ? (
+          selectedChat ? (
+            <Chat 
+              chat={selectedChat}
+              currentUser={{ username: user?.username, walletAddress }}
+              onClose={() => setSelectedChat(null)}
+            />
+          ) : (
+            <ChatList 
+              chats={chats}
+              currentUser={{ username: user?.username, walletAddress }}
+              onSelectChat={setSelectedChat}
+              onClose={() => setShowChats(false)}
+            />
+          )
+        ) : (
+          <>
+            {view === 'list' && (
+              <AuctionList 
+                auctions={auctions} 
+                onBid={placeBid}
+                user={user}
+                isConnected={isConnected}
+                walletAddress={walletAddress}
+                ethProvider={ethProvider}
+              />
+            )}
+            {view === 'create' && (
+              <CreateAuction 
+                onCreate={createAuction}
+                user={user}
+                isConnected={isConnected}
+                walletAddress={walletAddress}
+              />
+            )}
+          </>
         )}
       </main>
     </div>
