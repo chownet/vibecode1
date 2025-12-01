@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "postinstall": "echo 'Build dependencies installed'",
     "compile": "hardhat compile --config hardhat.config.cjs"
   },
   "dependencies": {

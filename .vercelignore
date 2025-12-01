@@ -1,0 +1,10 @@
+# Ignore contract files and Hardhat configs from Vercel build
+contracts/
+artifacts/
+cache/
+hardhat.config.cjs
+scripts/
+.env
+.env.local
+*.log
+node_modules/.cache/
