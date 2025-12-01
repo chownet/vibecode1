@@ -204,33 +204,40 @@ function App() {
     // Update local state
     setAuctions(prevAuctions => {
       return prevAuctions.map(auction => {
-        if (auction.id === auctionId && auction.status === 'active') {
-          const newBid = {
-            id: Date.now().toString(),
-            bidder: user?.username || 'Anonymous',
-            bidderFid: user?.fid || null,
-            bidderAddress: walletAddress,
-            amount: bidAmount,
-            transactionHash: transactionHash,
-            timestamp: Date.now()
-          };
+        if (auction.id === auctionId) {
+          const updatedAuction = { ...auction };
           
-          const updatedAuction = {
-            ...auction,
-            bids: [...auction.bids, newBid].sort((a, b) => b.amount - a.amount)
-          };
-
-          // Check if this bid triggers auto-accept price
-          const highestBid = updatedAuction.bids[0].amount;
-          if (auction.autoAcceptPrice && highestBid >= auction.autoAcceptPrice) {
-            updatedAuction.status = 'closed';
-            updatedAuction.closedAt = Date.now();
-            updatedAuction.closedReason = 'price_reached';
-            updatedAuction.winner = updatedAuction.bids[0];
+          // If onChainId is provided, update it (this happens when creating auction on-chain)
+          if (onChainAuctionId && !auction.onChainId) {
+            updatedAuction.onChainId = onChainAuctionId;
+          }
+          
+          // Only add bid if bidAmount > 0 (bidAmount = 0 means just updating onChainId)
+          if (bidAmount > 0 && auction.status === 'active') {
+            const newBid = {
+              id: Date.now().toString(),
+              bidder: user?.username || 'Anonymous',
+              bidderFid: user?.fid || null,
+              bidderAddress: walletAddress,
+              amount: bidAmount,
+              transactionHash: transactionHash,
+              timestamp: Date.now()
+            };
             
-            // Create chat for closed auction
-            if (updatedAuction.winner && updatedAuction.winner.bidderAddress) {
-              createChatForAuction(updatedAuction);
+            updatedAuction.bids = [...auction.bids, newBid].sort((a, b) => b.amount - a.amount);
+
+            // Check if this bid triggers auto-accept price
+            const highestBid = updatedAuction.bids[0].amount;
+            if (auction.autoAcceptPrice && highestBid >= auction.autoAcceptPrice) {
+              updatedAuction.status = 'closed';
+              updatedAuction.closedAt = Date.now();
+              updatedAuction.closedReason = 'price_reached';
+              updatedAuction.winner = updatedAuction.bids[0];
+              
+              // Create chat for closed auction
+              if (updatedAuction.winner && updatedAuction.winner.bidderAddress) {
+                createChatForAuction(updatedAuction);
+              }
             }
           }
 
